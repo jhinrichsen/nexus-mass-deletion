@@ -45,17 +45,20 @@ type searchNGResponse struct {
 	Artifacts      []Gav `xml:"data>artifact"`
 }
 
+// Gav is the standard Maven coordinates: group, artifact, version, extended by
+// a custom Nexus field for the latest release version
 type Gav struct {
-	GroupId       string `xml:"groupId"`
-	ArtifactId    string `xml:"artifactId"`
+	GroupID       string `xml:"groupId"`
+	ArtifactID    string `xml:"artifactId"`
 	Version       string `xml:"version"`
 	LatestRelease string `xml:"latestRelease"`
 }
 
+// ConciseNotation returns group:artifact:version
 func (a Gav) ConciseNotation() string {
 	return fmt.Sprintf("%v:%v:%v",
-		a.GroupId,
-		a.ArtifactId,
+		a.GroupID,
+		a.ArtifactID,
 		a.Version)
 }
 
@@ -64,8 +67,8 @@ func (a Gav) ConciseNotation() string {
 // XML result has to be parsed. This is not necessary for our use case.
 func (a Gav) DefaultLayout() string {
 	return fmt.Sprintf("%s/%s/%s",
-		strings.Replace(a.GroupId, ".", "/", -1),
-		a.ArtifactId,
+		strings.Replace(a.GroupID, ".", "/", -1),
+		a.ArtifactID,
 		a.Version)
 }
 
@@ -145,8 +148,8 @@ func main() {
 	truncated := false
 	perf := []int{}
 	for _, group := range groups {
-		gav := Gav{ArtifactId: artifact,
-			GroupId: group,
+		gav := Gav{ArtifactID: artifact,
+			GroupID: group,
 			Version: version}
 		log.Printf("processing %+v\n", gav)
 
@@ -270,12 +273,12 @@ func search(server string, port, repository string, gav Gav, count int) searchNG
 	url := fmt.Sprintf("http://%s:%s"+
 		"/service/local/lucene/search?"+
 		"g=%s&count=%d",
-		server, port, gav.GroupId, count)
+		server, port, gav.GroupID, count)
 	if repository != "" {
 		url += fmt.Sprintf("&repositoryId=%s", repository)
 	}
-	if gav.ArtifactId != "" {
-		url += fmt.Sprintf("&a=%s", gav.ArtifactId)
+	if gav.ArtifactID != "" {
+		url += fmt.Sprintf("&a=%s", gav.ArtifactID)
 	}
 	if gav.Version != "" {
 		url += fmt.Sprintf("&v=%s", gav.Version)

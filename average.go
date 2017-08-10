@@ -19,6 +19,7 @@ func ArithmeticMean(is []int) int {
 	return sum / len(is)
 }
 
+// Median returns median average of values
 func Median(slice []int) int {
 	// sorting is in-place, create copy so that input is not mutated
 	is := append([]int(nil), slice...)
