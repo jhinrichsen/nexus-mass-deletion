@@ -1,0 +1,122 @@
+= nexus-mass-deletion
+Jochen Hinrichsen, jochen.hinrichsen@kambrium.net
+v1.0.0, 2015-01-31
+:numbered:
+:toc: left
+
+     The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+     NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and
+     "OPTIONAL" in this document are to be interpreted as described in
+     RFC 2119.
+
+== Housekeeping for Sonatype Nexus 2.x repository server via REST API
+
+Nexus supports some housekeeping scheduled tasks, but some use cases are not covered.
+Especially when it comes to Maven releases in private repositories, old artifacts can be removed after a certain time.
+These releases have to be selectively picked in order to not remove artifacts that are still required.
+This commandline utility uses the Nexus REST API to perform a GAV search, optionally including wildcards, and returns the results.
+Once the GAV fits, `--delete` will actually remove them remotely.
+
+
+== Installation
+
+----
+% go get github/jhinrichsen/nexus-mass-deletion
+% cd ${HOME}/go/src/github/jhinrichsen/nexus-mass-deletion
+% go install
+----
+
+The result is a standalone statically linked executable for your platform.
+
+== Usage
+
+When called without any parameters, or -h, the Usage is displayed:
+
+----
+TODO usage
+----
+
+=== Options
+
+server, port::
+Remote location of Nexus installation
+
+expect::
+This is a safety net for removal.
+If a search returns more GAVs than expected, processing will not continue.
+
+throttle::
+Throttle will stop processing after the specified number.
+
+count::
+Nexus REST API supports a count parameter, but Nexus imposes a limit (either
+100 or 200) which cannot be increased using `count`.
+
+== Scenarios
+
+----
+% nexus-mass-deletion --version='3.2.1' \
+	com.mycorp.product1.batch \
+	com.mycorp.product1.frontend \
+	com.mycorp.product1.db
+----
+
+will issue a REST search request against localhost:8081 using username `admin`,
+password `admin123`, and show all matching GAV combinations on stdout.
+
+----
+% nexus-mass-deletion --version='3.2.1' --throttle=40 --delete \
+	com.mycorp.product1.batch \
+	com.mycorp.product1.frontend \
+	com.mycorp.product1.db
+----
+
+will issue the same request, and delete all artifacts (jars, test jars, source
+jars, poms, checksums, ...) for the given group/ version combination.
+Processing will stop after 40 GAVs have been deleted (not counting packaging,
+extensions, and metadata).
+
+== Constant Maven groups
+
+If a mass deletion is operated on the same large number of groups, they can be
+kept in a file (each and every group on a separate line).
+
+----
+% cat product1-groups.txt
+com.mycorp.product1.batch
+com.mycorp.product1.frontend
+com.mycorp.product1.db
+% nexus-mass-deletion @product1-groups.txt		(1)
+----
+
+(1) Read groups from file `product1-groups.txt`, separated by newline.
+
+== Shuffling groups
+
+When Nexus removes all artifacts for a GAV, it automatically rewrites Maven
+metadata in the GAV hierarchy above to indicate that this version is not
+available any more. This takes some time, and multiple mass deletions run in
+parallel will eventually synchronize in this step. Processing then takes longer
+than deleting in a random order, so groups are shuffled before processing to
+minimize parallel processing overhead.
+
+== Logging
+
+Some actions are logged, such as the internal HTTP DELETE URL.
+Logging happens on stderr which can easily be piped away using standard stderr
+redirection such as `2>/dev/null`.
+
+== TODO
+- As of now, the repository ID is hardcoded to `release`.
+- Re-run based on the REST search response if more artifacts are available
+- Make shuffle an option
+
+== Versioning
+
+Long story short: semver.
+
+== License
+
+MIT
+
+
