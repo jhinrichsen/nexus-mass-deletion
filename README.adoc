@@ -40,7 +40,30 @@ The result is a standalone statically linked executable for your platform.
 When called without any parameters, or -h, the Usage is displayed:
 
 ----
-TODO usage
+Usage: nexus-mass-deletion [options] [group...|@filename]
+	@ references a file with groups separated  by newline
+  -artifact string
+    	Limit search to an artifact
+  -count int
+    	Nexus count parameter in REST interface (default 200)
+  -delete
+    	delete search results (otherwise only display them)
+  -expect int
+    	expected number of results (default 1)
+  -keepLatest
+    	keep lastest version (default true)
+  -password string
+    	Nexus password (default "admin123")
+  -port string
+    	Nexus port (default "8081")
+  -server string
+    	Nexus server name (default "localhost")
+  -throttle int
+    	throttle number of actions (default 1)
+  -username string
+    	Nexus user (default "admin")
+  -version string
+    	Limit search to specific version (may include wildcards)
 ----
 
 === Options
@@ -80,6 +103,17 @@ password `admin123`, and show all matching GAV combinations on stdout.
 
 will issue the same request, and delete all artifacts (jars, test jars, source
 jars, poms, checksums, ...) for the given group/ version combination.
+Processing will stop after 40 GAVs have been deleted (not counting packaging,
+extensions, and metadata).
+
+----
+% nexus-mass-deletion --keepLatest --throttle=40 --delete \
+	com.mycorp.product1.batch \
+	com.mycorp.product1.frontend \
+	com.mycorp.product1.db
+----
+
+will delete all versions except for the latest one.
 Processing will stop after 40 GAVs have been deleted (not counting packaging,
 extensions, and metadata).
 
