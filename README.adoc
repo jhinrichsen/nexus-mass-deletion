@@ -10,7 +10,7 @@ image::https://img.shields.io/badge/code%20style-gofmt-brightgreen.svg[gofmt, li
 
 image::https://img.shields.io/travis/jhinrichsen/nexus-mass-deletion.svg[Travis build status, link=https://travis-ci.org/jhinrichsen/nexus-mass-deletion]
 
-image::https://goreportcard.com/badge/github.com/jhinrichsen/nexus-mass-deletion[Go Report Card, link=https://goreportcard.com/report/github/jhinrichsen/nexus-mass-deletion]
+image::https://goreportcard.com/badge/github.com/jhinrichsen/nexus-mass-deletion[Go Report Card, link=https://goreportcard.com/report/github.com/jhinrichsen/nexus-mass-deletion]
 
 
      The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
