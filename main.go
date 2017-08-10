@@ -125,19 +125,7 @@ func main() {
 	if len(flag.Args()) == 0 {
 		flag.Usage()
 	}
-	var groups []string
-	var err error
-	if groupIsFile(flag.Arg(0)) {
-		if len(flag.Args()) > 1 {
-			flag.Usage()
-		}
-		groups, err = read(flag.Arg(0)[1:])
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		groups = flag.Args()
-	}
+	groups := resolveGroups()
 
 	// If multiple instances are running, avoid syncing on generating Maven
 	// metadata
@@ -147,6 +135,7 @@ func main() {
 	actions := 0
 	truncated := false
 	perf := []int{}
+	var err error
 	for _, group := range groups {
 		gav := Gav{ArtifactID: artifact,
 			GroupID: group,
@@ -208,8 +197,6 @@ func main() {
 		// 73 out of 247 items for whatever reason
 		if found.TooManyResults || (n != found.TotalCount) {
 			truncated = true
-			log.Printf("Search has been truncated, re-running" +
-				" will delete more artifacts")
 		}
 	}
 	if truncated {
@@ -266,6 +253,21 @@ func read(filename string) (groups []string, err error) {
 		return nil, err
 	}
 	return
+}
+
+func resolveGroups() []string {
+	if groupIsFile(flag.Arg(0)) {
+		if len(flag.Args()) > 1 {
+			flag.Usage()
+		}
+		groups, err = read(flag.Arg(0)[1:])
+		if err != nil {
+			log.Fatal(err)
+		}
+		return groups
+	} else {
+		return flag.Args()
+	}
 }
 
 // search executes a REST search against Nexus
