@@ -218,7 +218,7 @@ func main() {
 // DELETE on http://${server}:${port}/service/local/repositories/${repo}/
 // content/${group}/${artifact}/${version}/${artifact}-${version}.jar
 func deleteGav(server, port, repository, username, password string, gav Gav) bool {
-	s := "http://%s:%s/service/local/%s/releases/content/%s"
+	s := "http://%s:%s/service/local/repositories/%s/content/%s"
 	url := fmt.Sprintf(s, server, port, repository, gav.DefaultLayout())
 	log.Printf("HTTP DELETE %v", url)
 	req, err := http.NewRequest("DELETE", url, nil)
