@@ -135,7 +135,6 @@ func main() {
 	actions := 0
 	truncated := false
 	perf := []int{}
-	var err error
 	for _, group := range groups {
 		gav := Gav{ArtifactID: artifact,
 			GroupID: group,
@@ -260,14 +259,13 @@ func resolveGroups() []string {
 		if len(flag.Args()) > 1 {
 			flag.Usage()
 		}
-		groups, err = read(flag.Arg(0)[1:])
+		groups, err := read(flag.Arg(0)[1:])
 		if err != nil {
 			log.Fatal(err)
 		}
 		return groups
-	} else {
-		return flag.Args()
 	}
+	return flag.Args()
 }
 
 // search executes a REST search against Nexus
