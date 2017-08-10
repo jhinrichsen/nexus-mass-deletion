@@ -86,10 +86,10 @@ kept in a file (each and every group on a separate line).
 com.mycorp.product1.batch
 com.mycorp.product1.frontend
 com.mycorp.product1.db
-% nexus-mass-deletion @product1-groups.txt		(1)
+% nexus-mass-deletion @product1-groups.txt		<1>
 ----
 
-(1) Read groups from file `product1-groups.txt`, separated by newline.
+<1> Read groups from file `product1-groups.txt`, separated by newline.
 
 == Shuffling groups
 
