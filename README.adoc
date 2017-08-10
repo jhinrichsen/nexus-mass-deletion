@@ -55,6 +55,8 @@ Usage: nexus-mass-deletion [options] [group...|@filename]
     	Nexus password (default "admin123")
   -port string
     	Nexus port (default "8081")
+  -repository string
+    	Nexus repository ID, empty for global search (default "releases")
   -server string
     	Nexus server name (default "localhost")
   -throttle int
@@ -147,7 +149,6 @@ Logging happens on stderr which can easily be piped away using standard stderr
 redirection such as `2>/dev/null`.
 
 == TODO
-- As of now, the repository ID is hardcoded to `release`.
 - Re-run based on the REST search response if more artifacts are available
 - Make shuffle an option
 

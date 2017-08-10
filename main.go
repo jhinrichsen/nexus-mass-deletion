@@ -32,6 +32,8 @@ const (
 	defaultArtifact = ""
 	defaultVersion  = ""
 
+	defaultRepository = "releases"
+
 	defaultCount = 200
 )
 
@@ -83,10 +85,11 @@ func main() {
 		count int
 
 		// Nexus coordinates
-		server   string
-		port     string
-		username string
-		password string
+		server     string
+		port       string
+		username   string
+		password   string
+		repository string
 
 		// Search coordinates
 		artifact string
@@ -103,6 +106,7 @@ func main() {
 	flag.IntVar(&throttle, "throttle", 1, "throttle number of actions")
 	flag.StringVar(&server, "server", defaultServer, "Nexus server name")
 	flag.StringVar(&port, "port", defaultPort, "Nexus port")
+	flag.StringVar(&repository, "repository", defaultRepository, "Nexus repository ID, empty for global search")
 	flag.StringVar(&username, "username", defaultUsername, "Nexus user")
 	flag.StringVar(&password, "password", defaultPassword,
 		"Nexus password")
@@ -144,9 +148,9 @@ func main() {
 		gav := Gav{ArtifactId: artifact,
 			GroupId: group,
 			Version: version}
-		log.Printf("Processing %s\n", gav)
+		log.Printf("processing %+v\n", gav)
 
-		found := search(server, port, gav, count)
+		found := search(server, port, repository, gav, count)
 		n := len(found.Artifacts)
 
 		// Display on stdout
@@ -178,7 +182,7 @@ func main() {
 
 			if delete {
 				now := time.Now()
-				deleted := deleteGav(server, port,
+				deleted := deleteGav(server, port, repository,
 					username, password, a)
 				if deleted {
 					actions++
@@ -213,9 +217,9 @@ func main() {
 // delete removes artifacts via REST from Nexus
 // DELETE on http://${server}:${port}/service/local/repositories/${repo}/
 // content/${group}/${artifact}/${version}/${artifact}-${version}.jar
-func deleteGav(server, port, username, password string, gav Gav) bool {
-	s := "http://%s:%s/service/local/repositories/releases/content/%s"
-	url := fmt.Sprintf(s, server, port, gav.DefaultLayout())
+func deleteGav(server, port, repository, username, password string, gav Gav) bool {
+	s := "http://%s:%s/service/local/%s/releases/content/%s"
+	url := fmt.Sprintf(s, server, port, repository, gav.DefaultLayout())
 	log.Printf("HTTP DELETE %v", url)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
@@ -262,11 +266,14 @@ func read(filename string) (groups []string, err error) {
 }
 
 // search executes a REST search against Nexus
-func search(server string, port string, gav Gav, count int) searchNGResponse {
+func search(server string, port, repository string, gav Gav, count int) searchNGResponse {
 	url := fmt.Sprintf("http://%s:%s"+
 		"/service/local/lucene/search?"+
 		"g=%s&count=%d",
 		server, port, gav.GroupId, count)
+	if repository != "" {
+		url += fmt.Sprintf("&repositoryId=%s", repository)
+	}
 	if gav.ArtifactId != "" {
 		url += fmt.Sprintf("&a=%s", gav.ArtifactId)
 	}
