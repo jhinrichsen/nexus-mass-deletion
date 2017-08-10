@@ -5,7 +5,7 @@ v1.0.0, 2015-01-31
 :toc: left
 
 
-image::https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat[gofmt, link=https://github.com/feross/standard]
+image::https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat[gofmt, link=https://golang.org/cmd/gofmt/]
 
 
 image::https://img.shields.io/travis/jhinrichsen/nexus-mass-deletion.svg[Travis build status, link=https://travis-ci.org/jhinrichsen/nexus-mass-deletion]
