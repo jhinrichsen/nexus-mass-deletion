@@ -8,6 +8,7 @@ v1.0.0, 2015-01-31
 image::https://img.shields.io/travis/jhinrichsen/nexus-mass-deletion.svg[alt="Travis build status", link="https://travis-ci.org/jhinrichsen/nexus-mass-deletion"]
 image::https://goreportcard.com/badge/github.com/jhinrichsen/nexus-mass-deletion[alt="Go Report Card", link="https://goreportcard.com/report/github.com/jhinrichsen/nexus-mass-deletion"]
 image::https://img.shields.io/badge/code%20style-gofmt-brightgreen.svg[alt="gofmt", link="https://golang.org/cmd/gofmt/"]
+image::https://img.shields.io/badge/editor-vim-brightgreen.svg[alt="vim", link="http://vim.org"]
 
 
      The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
