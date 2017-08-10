@@ -7,30 +7,30 @@
 package main
 
 import (
-        "sort"
+	"sort"
 )
 
 // ArithmeticMean does not perform any bound or overflow checking
 func ArithmeticMean(is []int) int {
-        sum := 0
-        for _, v := range is {
-                sum += v
-        }
-        return sum / len(is)
+	sum := 0
+	for _, v := range is {
+		sum += v
+	}
+	return sum / len(is)
 }
 
 func Median(slice []int) int {
-        // sorting is in-place, create copy so that input is not mutated
-        is := append([]int(nil), slice...)
-        sort.Ints(is)
-        n := len(is)
-        if even(n) {
-                upper := n / 2
-                return ArithmeticMean([]int{is[upper-1], is[upper]})
-        }
-        return is[n/2]
+	// sorting is in-place, create copy so that input is not mutated
+	is := append([]int(nil), slice...)
+	sort.Ints(is)
+	n := len(is)
+	if even(n) {
+		upper := n / 2
+		return ArithmeticMean([]int{is[upper-1], is[upper]})
+	}
+	return is[n/2]
 }
 
 func even(i int) bool {
-        return i%2 == 0
+	return i%2 == 0
 }
