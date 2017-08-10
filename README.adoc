@@ -5,10 +5,10 @@ v1.0.0, 2015-01-31
 :toc: left
 
 
-image::https://img.shields.io/badge/code%20style-gofmt-brightgreen.svg?style=plastic[gofmt, link=https://golang.org/cmd/gofmt/]
+image::https://img.shields.io/badge/code%20style-gofmt-brightgreen.svg[gofmt, link=https://golang.org/cmd/gofmt/]
 
 
-image::https://img.shields.io/travis/jhinrichsen/nexus-mass-deletion.svg?style=plastic[Travis build status, link=https://travis-ci.org/jhinrichsen/nexus-mass-deletion]
+image::https://img.shields.io/travis/jhinrichsen/nexus-mass-deletion.svg[Travis build status, link=https://travis-ci.org/jhinrichsen/nexus-mass-deletion]
 
 image::https://goreportcard.com/badge/github.com/jhinrichsen/nexus-mass-deletion[Go Report Card, link=https://goreportcard.com/report/github/jhinrichsen/nexus-mass-deletion]
 
