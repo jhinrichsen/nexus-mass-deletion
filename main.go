@@ -17,6 +17,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -24,10 +25,12 @@ import (
 )
 
 const (
-	defaultServer   = "localhost"
-	defaultPort     = "8081"
-	defaultUsername = "admin"
-	defaultPassword = "admin123"
+	defaultProtocol    = "http"
+	defaultServer      = "localhost"
+	defaultPort        = "8081"
+	defaultContextroot = "nexus/"
+	defaultUsername    = "admin"
+	defaultPassword    = "admin123"
 
 	defaultArtifact = ""
 	defaultVersion  = ""
@@ -36,6 +39,39 @@ const (
 
 	defaultCount = 200
 )
+
+// NexusInstance holds coordinates of a Nexus installation
+type NexusInstance struct {
+	Protocol    string
+	Server      string
+	Port        string
+	Contextroot string
+	Username    string
+	Password    string
+}
+
+// NexusRepository holds coordinates of a Nexus repository
+type NexusRepository struct {
+	NexusInstance
+	RepositoryID string
+}
+
+func baseUrl(repo NexusRepository) *url.URL {
+	s := fmt.Sprintf("%s://%s:%s/%s",
+		repo.Protocol, repo.Server, repo.Port, repo.Contextroot)
+	log.Printf("base URL: %s\n", s)
+	u, err := url.Parse(s)
+	if err != nil {
+		log.Fatalf("cannot parse URL %s: %v\n", s, err)
+	}
+	return u
+}
+
+// Fqa holds coordinates to a fully qualified artifact
+type Fqa struct {
+	NexusRepository
+	Gav
+}
 
 type searchNGResponse struct {
 	Count          int   `xml:"count"`
@@ -73,52 +109,34 @@ func (a Gav) DefaultLayout() string {
 }
 
 func main() {
-	var (
-		// force deletion, display only otherwise
-		delete     bool
-		keepLatest bool
-
-		// Expect exactly one artifact
-		expect int
-
-		// Limit actions
-		throttle int
-
-		// Nexus number of items to return
-		count int
-
-		// Nexus coordinates
-		server     string
-		port       string
-		username   string
-		password   string
-		repository string
-
-		// Search coordinates
-		artifact string
-		version  string
-	)
+	flag.Usage = usage
+	var repo NexusRepository
+	flag.StringVar(&repo.Protocol, "protocol", defaultProtocol,
+		"Nexus protocol (http/https)")
+	flag.StringVar(&repo.Server, "server", defaultServer,
+		"Nexus server name")
+	flag.StringVar(&repo.Port, "port", defaultPort, "Nexus port")
+	flag.StringVar(&repo.Contextroot, "contextroot", defaultContextroot,
+		"Nexus context root")
+	flag.StringVar(&repo.Username, "username", defaultUsername,
+		"Nexus credentials")
+	flag.StringVar(&repo.Password, "password", defaultPassword,
+		"Nexus credentials")
+	flag.StringVar(&repo.RepositoryID, "repository", defaultRepository,
+		"Nexus repository ID, empty for global search")
 
 	// Parse commandline parameter
-	flag.IntVar(&count, "count", defaultCount,
+	count := flag.Int("count", defaultCount,
 		"Nexus count parameter in REST interface")
-	flag.BoolVar(&delete, "delete", false,
+	delete := flag.Bool("delete", false,
 		"delete search results (otherwise only display them)")
-	flag.BoolVar(&keepLatest, "keepLatest", true, "keep lastest version")
-	flag.IntVar(&expect, "expect", 1, "expected number of results")
-	flag.IntVar(&throttle, "throttle", 1, "throttle number of actions")
-	flag.StringVar(&server, "server", defaultServer, "Nexus server name")
-	flag.StringVar(&port, "port", defaultPort, "Nexus port")
-	flag.StringVar(&repository, "repository", defaultRepository, "Nexus repository ID, empty for global search")
-	flag.StringVar(&username, "username", defaultUsername, "Nexus user")
-	flag.StringVar(&password, "password", defaultPassword,
-		"Nexus password")
-	flag.StringVar(&artifact, "artifact", defaultArtifact,
+	keepLatest := flag.Bool("keepLatest", true, "keep lastest version")
+	expect := flag.Int("expect", 1, "expected number of results")
+	throttle := flag.Int("throttle", 1, "throttle number of actions")
+	artifact := flag.String("artifact", defaultArtifact,
 		"Limit search to an artifact")
-	flag.StringVar(&version, "version", defaultVersion,
+	version := flag.String("version", defaultVersion,
 		"Limit search to specific version (may include wildcards)")
-
-	flag.Usage = usage
 	flag.Parse()
 
 	// Need at least one group, or exactly one @filename
@@ -136,12 +154,12 @@ func main() {
 	truncated := false
 	perf := []int{}
 	for _, group := range groups {
-		gav := Gav{ArtifactID: artifact,
+		gav := Gav{ArtifactID: *artifact,
 			GroupID: group,
-			Version: version}
+			Version: *version}
 		log.Printf("processing %+v\n", gav)
 
-		found := search(server, port, repository, gav, count)
+		found := search(Fqa{repo, gav}, *count)
 		n := len(found.Artifacts)
 
 		// Display on stdout
@@ -151,30 +169,29 @@ func main() {
 		log.Printf("search returned %v artifacts out of %v\n",
 			n, found.TotalCount)
 		// Check expected result size
-		if n > expect {
+		if n > *expect {
 			msg := "Found %v artifacts but expect is %v, aborting\n"
-			fmt.Fprintf(os.Stderr, msg, n, expect)
+			fmt.Fprintf(os.Stderr, msg, n, *expect)
 			os.Exit(1)
 		}
 		for i := 0; i < n; i++ {
 			a := found.Artifacts[i]
-			if keepLatest && a.Version == a.LatestRelease {
+			if *keepLatest && a.Version == a.LatestRelease {
 				log.Printf("keeping latest version %v for %v\n",
 					a.LatestRelease, a.ConciseNotation())
 				continue
 			}
 
 			// Check if throttle limit reached
-			if actions >= throttle {
+			if actions >= *throttle {
 				s := "throttle=%v reached, exiting"
 				log.Printf(s, actions)
 				os.Exit(0)
 			}
 
-			if delete {
+			if *delete {
 				now := time.Now()
-				deleted := deleteGav(server, port, repository,
-					username, password, a)
+				deleted := deleteGav(Fqa{repo, a})
 				if deleted {
 					actions++
 
@@ -206,15 +223,16 @@ func main() {
 // delete removes artifacts via REST from Nexus
 // DELETE on http://${server}:${port}/service/local/repositories/${repo}/
 // content/${group}/${artifact}/${version}/${artifact}-${version}.jar
-func deleteGav(server, port, repository, username, password string, gav Gav) bool {
-	s := "http://%s:%s/service/local/repositories/%s/content/%s"
-	url := fmt.Sprintf(s, server, port, repository, gav.DefaultLayout())
-	log.Printf("HTTP DELETE %v", url)
-	req, err := http.NewRequest("DELETE", url, nil)
+func deleteGav(fqa Fqa) bool {
+	u := baseUrl(fqa.NexusRepository).String()
+	u += fmt.Sprintf("%s/service/local/repositories/%s/content/%s",
+		u, fqa.RepositoryID, fqa.Gav.DefaultLayout())
+	log.Printf("HTTP DELETE %v", u)
+	req, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(fqa.NexusInstance.Username, fqa.NexusInstance.Password)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -226,7 +244,7 @@ func deleteGav(server, port, repository, username, password string, gav Gav) boo
 	}
 	if rc == 404 {
 		// Nexus is bent out of shape
-		log.Printf("%s is already gone", gav.ConciseNotation())
+		log.Printf("%s is already gone", fqa.Gav.ConciseNotation())
 		return false
 	}
 	log.Fatalf("Expected HTTP status code 204 but got %v", rc)
@@ -269,26 +287,30 @@ func resolveGroups() []string {
 }
 
 // search executes a REST search against Nexus
-func search(server string, port, repository string, gav Gav, count int) searchNGResponse {
-	url := fmt.Sprintf("http://%s:%s"+
-		"/service/local/lucene/search?"+
-		"g=%s&count=%d",
-		server, port, gav.GroupID, count)
-	if repository != "" {
-		url += fmt.Sprintf("&repositoryId=%s", repository)
+func search(fqa Fqa, count int) searchNGResponse {
+	var sb strings.Builder
+	sb.WriteString(baseUrl(fqa.NexusRepository).String())
+	sb.WriteString(
+		fmt.Sprintf("service/local/lucene/search?g=%s&count=%d",
+			fqa.Gav.GroupID, count))
+	if fqa.RepositoryID != "" {
+		sb.WriteString(
+			fmt.Sprintf("&repositoryId=%s",
+				fqa.RepositoryID))
 	}
-	if gav.ArtifactID != "" {
-		url += fmt.Sprintf("&a=%s", gav.ArtifactID)
+	if fqa.Gav.ArtifactID != "" {
+		sb.WriteString(fmt.Sprintf("&a=%s", fqa.Gav.ArtifactID))
 	}
-	if gav.Version != "" {
-		url += fmt.Sprintf("&v=%s", gav.Version)
+	if fqa.Gav.Version != "" {
+		sb.WriteString(fmt.Sprintf("&v=%s", fqa.Gav.Version))
 	}
-	response, err := http.Get(url)
+	u := sb.String()
+	response, err := http.Get(u)
 	if err != nil {
-		log.Fatalf("Cannot read url %v: %v\n", url, err)
+		log.Fatalf("Cannot read url %v: %v\n", u, err)
 	}
 	log.Printf("%v returns HTTP status code %v\n",
-		url, response.StatusCode)
+		u, response.StatusCode)
 	if response.StatusCode != 200 {
 		log.Fatalf("Expected status 200 but got %v\n",
 			response.StatusCode)
