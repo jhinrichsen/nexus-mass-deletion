@@ -59,7 +59,6 @@ type NexusRepository struct {
 func baseUrl(repo NexusRepository) *url.URL {
 	s := fmt.Sprintf("%s://%s:%s/%s",
 		repo.Protocol, repo.Server, repo.Port, repo.Contextroot)
-	log.Printf("base URL: %s\n", s)
 	u, err := url.Parse(s)
 	if err != nil {
 		log.Fatalf("cannot parse URL %s: %v\n", s, err)
@@ -224,9 +223,9 @@ func main() {
 // DELETE on http://${server}:${port}/service/local/repositories/${repo}/
 // content/${group}/${artifact}/${version}/${artifact}-${version}.jar
 func deleteGav(fqa Fqa) bool {
-	u := baseUrl(fqa.NexusRepository).String()
-	u += fmt.Sprintf("%s/service/local/repositories/%s/content/%s",
-		u, fqa.RepositoryID, fqa.Gav.DefaultLayout())
+	u := fmt.Sprintf("%sservice/local/repositories/%s/content/%s",
+		baseUrl(fqa.NexusRepository).String(),
+		fqa.RepositoryID, fqa.Gav.DefaultLayout())
 	log.Printf("HTTP DELETE %v", u)
 	req, err := http.NewRequest("DELETE", u, nil)
 	if err != nil {
